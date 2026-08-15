@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "langchain-eda-agent"
+name = "object-eda-agent"
 version = "0.1.0"
 description = "A tool-using LangChain agent for schema-validated exploratory data analysis"
 readme = "setup.md"
@@ -12,6 +12,7 @@ dependencies = [
   "fastapi>=0.115,<1.0",
   "langchain>=1.0,<2.0",
   "langchain-openai>=1.0,<2.0",
+  "matplotlib>=3.9,<4.0",
   "pandas>=2.2,<4.0",
   "pydantic>=2.10,<3.0",
   "python-dotenv>=1.0,<2.0",

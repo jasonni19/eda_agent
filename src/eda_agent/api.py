@@ -11,7 +11,9 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 
-from .agent import run_eda
+from .agent import load_csv, run_eda
+from .outputs import markdown_filename, plots_zip_data_uri, render_markdown_report
+from .plots import render_plot_images
 
 load_dotenv()
 
@@ -52,7 +54,20 @@ async def analyze(file: UploadFile = File(...)) -> dict:
             output_path = Path(temp_dir) / "eda_report.json"
             csv_path.write_bytes(content)
             report = await run_in_threadpool(run_eda, csv_path, output_path, model_name)
-            return report.model_dump(mode="json")
+            frame = await run_in_threadpool(load_csv, csv_path)
+            plot_images = await run_in_threadpool(render_plot_images, frame, report.plot_plan)
+            return {
+                "report": report.model_dump(mode="json"),
+                "plot_images": plot_images,
+                "markdown_report": {
+                    "filename": markdown_filename(report.source_file),
+                    "content": render_markdown_report(report),
+                },
+                "plots_archive": {
+                    "filename": "eda_plots.zip",
+                    "data_uri": plots_zip_data_uri(plot_images),
+                },
+            }
     except (UnicodeDecodeError, ValueError) as error:
         raise HTTPException(status_code=422, detail=f"Could not read this CSV: {error}") from error
     except Exception as error:

@@ -77,6 +77,23 @@ body { background-image: linear-gradient(rgba(17,19,23,.025) 1px, transparent 1p
 .report-card button { padding: 8px 11px; border: 1px solid #d8cf00; background: var(--yellow); color: #080c12; cursor: pointer; font-family: inherit; font-size: 9px; font-weight: 800; }
 .report-card button:hover { box-shadow: 0 0 18px rgba(255,245,0,.18); }
 
+.executive-summary { margin-top: 15px; padding: 14px 15px; border-left: 3px solid #111; background: #f7f8fa; }
+.executive-summary > strong, .chart-gallery-heading strong { font-size: 11px; text-transform: uppercase; letter-spacing: .45px; }
+.executive-summary p { margin-top: 7px; }
+.chart-gallery { display: grid; gap: 12px; margin-top: 15px; }
+.chart-gallery-heading { display: flex; align-items: center; justify-content: space-between; }
+.chart-gallery-heading > div { display: flex; flex-direction: column; gap: 3px; }
+.chart-gallery-heading small { color: var(--muted); font-size: 9px; }
+.chart-toggle { padding: 7px 10px; border: 1px solid var(--line-bright); background: #fff; cursor: pointer; font-size: 9px; font-weight: 700; }
+.chart-toggle:hover { border-color: #111; }
+.chart-card { overflow: hidden; border: 1px solid var(--line); background: #fff; }
+.chart-card img { display: block; width: 100%; height: auto; background: #fff; }
+.chart-caption { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-top: 1px solid var(--line); }
+.chart-caption > div { display: flex; flex: 1; flex-direction: column; gap: 3px; }
+.chart-caption strong { font-size: 10px; }
+.chart-caption small { color: var(--muted); font-size: 9px; line-height: 1.4; }
+.chart-caption button { flex: 0 0 auto; padding: 8px 10px; border: 1px solid #d8cf00; background: var(--yellow); cursor: pointer; font-size: 9px; font-weight: 800; }
+
 .composer-area { padding: 12px clamp(25px, 12vw, 220px) 18px; border-top: 1px solid var(--line); background: rgba(255,255,255,.95); }
 .selected-files { display: grid; gap: 6px; max-width: 560px; max-height: 150px; margin: 0 0 8px; overflow-y: auto; }
 .selected-file { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border: 1px solid var(--line); background: var(--panel); }
@@ -109,6 +126,8 @@ body { background-image: linear-gradient(rgba(17,19,23,.025) 1px, transparent 1p
   .message { max-width: 88vw; }
   .report-card { min-width: 0; flex-wrap: wrap; }
   .report-card button { width: 100%; }
+  .chart-caption { align-items: flex-start; flex-direction: column; }
+  .chart-caption button { width: 100%; }
   .composer { min-height: 62px; }
   .upload-copy small { max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }

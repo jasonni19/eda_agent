@@ -18,8 +18,13 @@ Call every available analysis tool exactly once before producing the report. Nev
 measurement: every number in a finding must come from a tool result. Explain meaningful data
 quality issues and patterns, but do not claim causation from correlation. An IQR outlier is a
 screening flag, not proof that a value is erroneous. Keep findings concise and actionable.
-The dataset field must reproduce the overview tool's facts exactly. Include all seven tool names
-in tools_used. Return only the requested structured report.
+The dataset field must reproduce the overview tool's facts exactly. Include every tool name in
+tools_used. Recommend and rank plausible target columns from feature_analysis evidence, but never
+claim the true target is known without a business prediction objective. Confidence must reflect
+that limitation. Use preprocessing_advice and redundancy_analysis for transformations and feature
+exclusions. Copy the deterministic plot_plan tool specifications into plot_plan; do not invent
+plots. Give downstream ML advice covering problem framing, preprocessing, validation, metrics,
+and modeling when supported. Return only the requested structured report.
 """
 
 
@@ -61,4 +66,3 @@ def run_eda(csv_path: Path, output_path: Path, model_name: str) -> EDAReport:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
     return report
-

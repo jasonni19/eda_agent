@@ -1,4 +1,4 @@
-# LangChain EDA Agent
+# Object EDA Agent
 
 Creates a schema-validated EDA report from a CSV:
 
@@ -42,7 +42,14 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`, upload a CSV, and download the JSON report.
+Open `http://localhost:3000`, upload a CSV, review the executive summary and generated charts,
+then download individual PNG files or these three outputs:
+
+- `<input_file>_eda_report.json` — validated machine-readable report
+- `<input_file>_eda_report.md` — human-readable report
+- `eda_plots.zip` — downloadable `eda_plots/` folder containing all PNG charts
+
+CLI runs create the same JSON and Markdown reports plus a real `eda_plots/` directory.
 
 Optional arguments: You can specify what model for the agent to use.
 
@@ -59,7 +66,8 @@ pytest
 ## Code map
 
 - `schemas.py` — defines and validates the JSON report.
-- `tools.py` — contains the seven pandas analysis tools.
+- `tools.py` — contains deterministic quality, feature, target-candidate, distribution,
+  redundancy, preprocessing, and plot-planning tools.
 - `agent.py` — connects the model, tools, and schema.
 - `cli.py` — provides the `eda-agent` command.
 
@@ -69,6 +77,8 @@ pytest
 - IQR outliers are review flags, not confirmed errors.
 - Value counts are limited to 10 values and correlations to 25 pairs.
 - pandas infers CSV data types automatically.
+- Target recommendations are evidence-based candidates; business intent is required to confirm
+  the actual prediction target.
 
 For production use, consider input schemas, size limits, PII protection, retries, monitoring, and
 human review.

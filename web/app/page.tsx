@@ -9,13 +9,25 @@ type ChatMessage = {
   text: string;
   file?: string;
   report?: Record<string, unknown>;
+  plots?: PlotArtifact[];
+  markdown?: { filename: string; content: string };
+  plotsArchive?: { filename: string; data_uri: string };
+};
+
+type PlotArtifact = {
+  title?: string;
+  rationale?: string;
+  filename?: string | null;
+  image_data_uri?: string | null;
 };
 
 const progressSteps = [  // just a visual progress indicator
   "Reading column types and dataset shape",
+  "Ranking possible target columns",
   "Checking missing values and duplicates",
-  "Calculating descriptive statistics",
-  "Examining correlations and outliers",
+  "Analyzing distributions and transformations",
+  "Examining redundancy and outliers",
+  "Planning key EDA visualizations",
   "Writing and validating your report",
 ];
 
@@ -35,6 +47,7 @@ export default function Home() {
   const [activeFileName, setActiveFileName] = useState("");
   const [queuePosition, setQueuePosition] = useState({ current: 0, total: 0 });
   const [error, setError] = useState("");
+  const [visibleChartMessages, setVisibleChartMessages] = useState<Set<number>>(new Set());
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 1,
@@ -115,14 +128,21 @@ export default function Home() {
           const response = await fetch(`${apiBase}/analyze`, { method: "POST", body: form });
           const body = await response.json();
           if (!response.ok) throw new Error(body.detail ?? "The analysis could not be completed.");
+          const report = body.report as Record<string, unknown>;
+          const plots = Array.isArray(body.plot_images) ? body.plot_images as PlotArtifact[] : [];
+          const markdown = body.markdown_report as { filename: string; content: string };
+          const plotsArchive = body.plots_archive as { filename: string; data_uri: string };
           setProgress(progressSteps.length - 1);
           setMessages((current) => [
             ...current,
             {
               id: Date.now() + index * 10 + 1,
               role: "assistant",
-              text: `Analysis complete for ${selected.name}. I found ${Array.isArray(body.findings) ? body.findings.length : 0} reportable findings and validated the output against the EDA schema.`,
-              report: body,
+              text: `Analysis complete for ${selected.name}. I found ${Array.isArray(report.findings) ? report.findings.length : 0} reportable findings and validated the output against the EDA schema.`,
+              report,
+              plots,
+              markdown,
+              plotsArchive,
             },
           ]);
         } catch (caught) {
@@ -153,6 +173,40 @@ export default function Home() {
     URL.revokeObjectURL(url);
   }
 
+  function downloadPlot(plot: PlotArtifact) {
+    if (!plot.image_data_uri) return;
+    const anchor = document.createElement("a");
+    anchor.href = plot.image_data_uri;
+    anchor.download = plot.filename ?? "eda_chart.png";
+    anchor.click();
+  }
+
+  function downloadMarkdown(markdown: { filename: string; content: string }) {
+    const blob = new Blob([markdown.content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = markdown.filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function downloadPlotsArchive(archive: { filename: string; data_uri: string }) {
+    const anchor = document.createElement("a");
+    anchor.href = archive.data_uri;
+    anchor.download = archive.filename;
+    anchor.click();
+  }
+
+  function toggleCharts(messageId: number) {
+    setVisibleChartMessages((current) => {
+      const next = new Set(current);
+      if (next.has(messageId)) next.delete(messageId);
+      else next.add(messageId);
+      return next;
+    });
+  }
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -180,11 +234,61 @@ export default function Home() {
                   <p>{message.text}</p>
                   {message.file && <div className="file-chip"><span>CSV</span><div><strong>{message.file}</strong><small>Ready for analysis</small></div></div>}
                   {message.report && (
-                    <div className="report-card">
-                      <div className="report-icon">{'{ }'}</div>
-                      <div><strong>{reportFilename(message.report)}</strong><small>Validated JSON report</small></div>
-                      <button onClick={() => download(message.report!)}>Download <span>↓</span></button>
-                    </div>
+                    <>
+                      {typeof message.report.executive_summary === "string" && (
+                        <section className="executive-summary">
+                          <strong>Executive summary</strong>
+                          <p>{message.report.executive_summary}</p>
+                        </section>
+                      )}
+                      {message.plots && message.plots.some((plot) => plot.image_data_uri) && (
+                        <section className="chart-gallery" aria-label="Generated EDA charts">
+                          <div className="chart-gallery-heading">
+                            <div>
+                              <strong>Generated charts</strong>
+                              <small>{message.plots.filter((plot) => plot.image_data_uri).length} PNG files</small>
+                            </div>
+                            <button
+                              className="chart-toggle"
+                              type="button"
+                              aria-expanded={visibleChartMessages.has(message.id)}
+                              onClick={() => toggleCharts(message.id)}
+                            >
+                              {visibleChartMessages.has(message.id) ? "Hide charts" : "Show charts"}
+                            </button>
+                          </div>
+                          {visibleChartMessages.has(message.id) && message.plots.filter((plot) => plot.image_data_uri).map((plot, plotIndex) => (
+                            <article className="chart-card" key={`${plot.filename ?? plot.title}-${plotIndex}`}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={plot.image_data_uri!} alt={plot.title ?? "EDA chart"} />
+                              <div className="chart-caption">
+                                <div><strong>{plot.title ?? "EDA chart"}</strong><small>{plot.rationale}</small></div>
+                                <button onClick={() => downloadPlot(plot)}>Download PNG <span>↓</span></button>
+                              </div>
+                            </article>
+                          ))}
+                        </section>
+                      )}
+                      <div className="report-card">
+                        <div className="report-icon">{'{ }'}</div>
+                        <div><strong>{reportFilename(message.report)}</strong><small>Validated JSON report</small></div>
+                        <button onClick={() => download(message.report!)}>Download <span>↓</span></button>
+                      </div>
+                      {message.markdown && (
+                        <div className="report-card">
+                          <div className="report-icon">MD</div>
+                          <div><strong>{message.markdown.filename}</strong><small>Human-readable EDA summary</small></div>
+                          <button onClick={() => downloadMarkdown(message.markdown!)}>Download <span>↓</span></button>
+                        </div>
+                      )}
+                      {message.plotsArchive && (
+                        <div className="report-card">
+                          <div className="report-icon">ZIP</div>
+                          <div><strong>{message.plotsArchive.filename}</strong><small>Folder containing all PNG charts</small></div>
+                          <button onClick={() => downloadPlotsArchive(message.plotsArchive!)}>Download <span>↓</span></button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
