@@ -26,7 +26,7 @@ Add your API key to `.env`, then run:
 eda-agent path\to\dataset.csv
 ```
 
-### How to use the Chat interface
+### How to start the Chat interface
 
 Start the analysis API:
 
