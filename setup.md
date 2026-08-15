@@ -26,6 +26,24 @@ Add your API key to `.env`, then run:
 eda-agent path\to\dataset.csv
 ```
 
+### Chat interface
+
+Start the analysis API:
+
+```powershell
+eda-api
+```
+
+In a second terminal, start the web interface:
+
+```powershell
+cd web
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000`, upload a CSV, and download the JSON report.
+
 Optional arguments: You can specify what model for the agent to use.
 
 ```powershell
