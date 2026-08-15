@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "langchain-eda-agent"
+version = "0.1.0"
+description = "A tool-using LangChain agent for schema-validated exploratory data analysis"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "langchain>=1.0,<2.0",
+  "langchain-openai>=1.0,<2.0",
+  "pandas>=2.2,<4.0",
+  "pydantic>=2.10,<3.0",
+  "python-dotenv>=1.0,<2.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0,<10.0"]
+
+[project.scripts]
+eda-agent = "eda_agent.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/eda_agent"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
