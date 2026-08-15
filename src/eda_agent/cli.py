@@ -1,4 +1,4 @@
-"""Command-line interface."""
+"""Necessary for the CLI to be used. Command-line interface."""
 
 from __future__ import annotations
 

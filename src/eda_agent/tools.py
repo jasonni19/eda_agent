@@ -143,4 +143,5 @@ def build_eda_tools(df: pd.DataFrame) -> list[Any]:
             ]
         return result
 
+    # return the list of tools
     return [overview, missing_values, statistics, correlations, outliers, duplicates, value_counts]

@@ -47,7 +47,7 @@ async def analyze(file: UploadFile = File(...)) -> dict:
 
     model_name = os.getenv("EDA_MODEL", "openai:gpt-4.1-mini")
     try:
-        with TemporaryDirectory(prefix="lumen-eda-") as temp_dir:
+        with TemporaryDirectory(prefix="object-eda-") as temp_dir:
             csv_path = Path(temp_dir) / filename
             output_path = Path(temp_dir) / "eda_report.json"
             csv_path.write_bytes(content)

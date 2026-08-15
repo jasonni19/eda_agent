@@ -37,12 +37,12 @@ def run_eda(csv_path: Path, output_path: Path, model_name: str) -> EDAReport:
     model = init_chat_model(model_name, temperature=0)
     agent = create_agent(
         model=model,
-        tools=build_eda_tools(df),
+        tools=build_eda_tools(df), # this is the list of tools that the agent will use to analyze the data
         system_prompt=SYSTEM_PROMPT,
-        response_format=EDAReport,
+        response_format=EDAReport, # this is the format of the response that the agent will return
     )
-    timestamp = datetime.now(UTC).isoformat()
-    result = agent.invoke(
+    timestamp = datetime.now(UTC).isoformat() # this is the timestamp of the analysis
+    result = agent.invoke( # this is the invocation of the agent. 
         {
             "messages": [
                 {

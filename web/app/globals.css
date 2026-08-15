@@ -39,8 +39,8 @@ body { background-image: linear-gradient(rgba(17,19,23,.025) 1px, transparent 1p
 .chat-heading { display: flex; align-items: center; justify-content: space-between; padding: 0 3.2vw; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.9); }
 .chat-heading > div { display: flex; align-items: center; gap: 12px; }
 .chat-heading div div { display: flex; flex-direction: column; }
-.chat-heading strong { font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .7px; }
-.chat-heading small { margin-top: 3px; color: #58e59a; font-family: var(--font-mono), monospace; font-size: 8px; }
+.chat-heading strong { font-family: inherit; font-size: 12px; letter-spacing: normal; }
+.chat-heading small { margin-top: 3px; color: #36905d; font-family: inherit; font-size: 9px; }
 .agent-dot, .avatar { display: grid; place-items: center; border: 1px solid #8cc9e9; background: var(--blue-dim); color: #056ca4; font-family: var(--font-mono), sans-serif; }
 .agent-dot { width: 34px; height: 34px; font-size: 9px; }
 .schema-pill { padding: 6px 10px; border: 1px solid #b9dff2; background: #eff9fe; color: #056ca4; font-family: var(--font-mono), sans-serif; font-size: 8px; letter-spacing: .5px; }
@@ -78,7 +78,8 @@ body { background-image: linear-gradient(rgba(17,19,23,.025) 1px, transparent 1p
 .report-card button:hover { box-shadow: 0 0 18px rgba(255,245,0,.18); }
 
 .composer-area { padding: 12px clamp(25px, 12vw, 220px) 18px; border-top: 1px solid var(--line); background: rgba(255,255,255,.95); }
-.selected-file { display: flex; align-items: center; gap: 9px; max-width: 440px; margin: 0 0 8px; padding: 8px 10px; border: 1px solid var(--line); background: var(--panel); }
+.selected-files { display: grid; gap: 6px; max-width: 560px; max-height: 150px; margin: 0 0 8px; overflow-y: auto; }
+.selected-file { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border: 1px solid var(--line); background: var(--panel); }
 .selected-file strong { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .selected-file small { margin-left: auto; color: var(--muted); font-family: var(--font-mono), monospace; font-size: 9px; }
 .selected-file button { border: 0; background: transparent; color: #8f9ba8; cursor: pointer; }

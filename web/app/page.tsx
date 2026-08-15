@@ -11,7 +11,7 @@ type ChatMessage = {
   report?: Record<string, unknown>;
 };
 
-const progressSteps = [
+const progressSteps = [  // just a visual progress indicator
   "Reading column types and dataset shape",
   "Checking missing values and duplicates",
   "Calculating descriptive statistics",
@@ -28,10 +28,12 @@ function reportFilename(report: Record<string, unknown>) {
 }
 
 export default function Home() {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
   const [working, setWorking] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [activeFileName, setActiveFileName] = useState("");
+  const [queuePosition, setQueuePosition] = useState({ current: 0, total: 0 });
   const [error, setError] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -55,70 +57,89 @@ export default function Home() {
     return () => window.clearInterval(timer);
   }, [working]);
 
-  function acceptFile(candidate?: File) {
+  function acceptFiles(candidates: File[]) {
     setError("");
-    if (!candidate) return;
-    if (!candidate.name.toLowerCase().endsWith(".csv")) {
-      setError("Please choose a .csv file.");
-      return;
+    const valid: File[] = [];
+    const rejected: string[] = [];
+
+    for (const candidate of candidates) {
+      if (!candidate.name.toLowerCase().endsWith(".csv")) {
+        rejected.push(`${candidate.name} is not a CSV`);
+      } else if (candidate.size > 15 * 1024 * 1024) {
+        rejected.push(`${candidate.name} is larger than 15 MB`);
+      } else {
+        valid.push(candidate);
+      }
     }
-    if (candidate.size > 15 * 1024 * 1024) {
-      setError("Please choose a CSV smaller than 15 MB.");
-      return;
-    }
-    setFile(candidate);
+
+    if (rejected.length) setError(rejected.join(" · "));
+    setFiles((current) => {
+      const existing = new Set(current.map((item) => `${item.name}:${item.size}:${item.lastModified}`));
+      return [...current, ...valid.filter((item) => !existing.has(`${item.name}:${item.size}:${item.lastModified}`))];
+    });
   }
 
   function onFileChange(event: ChangeEvent<HTMLInputElement>) {
-    acceptFile(event.target.files?.[0]);
+    acceptFiles(Array.from(event.target.files ?? []));
+    event.target.value = "";
   }
 
   function onDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setDragging(false);
-    acceptFile(event.dataTransfer.files?.[0]);
+    acceptFiles(Array.from(event.dataTransfer.files ?? []));
   }
 
   async function analyze() {
-    if (!file || working) return;
-    const selected = file;
-    setMessages((current) => [
-      ...current,
-      { id: Date.now(), role: "user", text: "Analyze this dataset", file: selected.name },
-    ]);
-    setFile(null);
+    if (!files.length || working) return;
+    const queue = [...files];
+    setFiles([]);
     setError("");
-    setProgress(0);
     setWorking(true);
+    setQueuePosition({ current: 1, total: queue.length });
 
     try {
-      const form = new FormData();
-      form.append("file", selected);
-      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
-      const response = await fetch(`${apiBase}/analyze`, { method: "POST", body: form });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.detail ?? "The analysis could not be completed.");
-      setProgress(progressSteps.length - 1);
-      setMessages((current) => [
-        ...current,
-        {
-          id: Date.now() + 1,
-          role: "assistant",
-          text: `Analysis complete. I found ${Array.isArray(body.findings) ? body.findings.length : 0} reportable findings and validated the output against the EDA schema.`,
-          report: body,
-        },
-      ]);
-    } catch (caught) {
-      setMessages((current) => [
-        ...current,
-        {
-          id: Date.now() + 1,
-          role: "assistant",
-          text: caught instanceof Error ? caught.message : "Something went wrong while analyzing the file.",
-        },
-      ]);
+      for (const [index, selected] of queue.entries()) {
+        setActiveFileName(selected.name);
+        setQueuePosition({ current: index + 1, total: queue.length });
+        setProgress(0);
+        setMessages((current) => [
+          ...current,
+          { id: Date.now() + index * 10, role: "user", text: "Analyze this dataset", file: selected.name },
+        ]);
+
+        try {
+          const form = new FormData();
+          form.append("file", selected);
+          const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
+          const response = await fetch(`${apiBase}/analyze`, { method: "POST", body: form });
+          const body = await response.json();
+          if (!response.ok) throw new Error(body.detail ?? "The analysis could not be completed.");
+          setProgress(progressSteps.length - 1);
+          setMessages((current) => [
+            ...current,
+            {
+              id: Date.now() + index * 10 + 1,
+              role: "assistant",
+              text: `Analysis complete for ${selected.name}. I found ${Array.isArray(body.findings) ? body.findings.length : 0} reportable findings and validated the output against the EDA schema.`,
+              report: body,
+            },
+          ]);
+        } catch (caught) {
+          setMessages((current) => [
+            ...current,
+            {
+              id: Date.now() + index * 10 + 1,
+              role: "assistant",
+              text: `${selected.name}: ${caught instanceof Error ? caught.message : "Something went wrong while analyzing this file."}`,
+            },
+          ]);
+        }
+      }
     } finally {
       setWorking(false);
+      setActiveFileName("");
+      setQueuePosition({ current: 0, total: 0 });
     }
   }
 
@@ -147,7 +168,7 @@ export default function Home() {
       <section className="workspace">
         <section className="chat-panel" aria-label="EDA assistant chat">
           <div className="chat-heading">
-            <div><div><strong>EDA AGENT</strong><small>● READY FOR INPUT</small></div></div>
+            <div><div><strong>EDA Agent</strong><small>● READY FOR INPUT</small></div></div>
            
           </div>
 
@@ -173,10 +194,10 @@ export default function Home() {
               <div className="message-wrap assistant thinking-wrap">
                 <span className="avatar">✦</span>
                 <div className="thinking-card">
-                  <div className="thinking-title"><span className="pulse-ring" />Analyzing your dataset</div>
+                  <div className="thinking-title"><span className="pulse-ring" />Analyzing {activeFileName}</div>
                   <p>{progressSteps[progress]}</p>
                   <div className="progress-track"><span style={{ width: `${18 + progress * 19}%` }} /></div>
-                  <small>Running deterministic pandas checks</small>
+                  <small>File {queuePosition.current} of {queuePosition.total} · Running deterministic pandas checks</small>
                 </div>
               </div>
             )}
@@ -184,20 +205,27 @@ export default function Home() {
           </div>
 
           <div className="composer-area">
-            {file && <div className="selected-file"><span>CSV</span><strong>{file.name}</strong><small>{(file.size / 1024).toFixed(1)} KB</small><button aria-label="Remove file" onClick={() => setFile(null)}>×</button></div>}
+            {files.length > 0 && <div className="selected-files">
+              {files.map((selected, index) => (
+                <div className="selected-file" key={`${selected.name}:${selected.size}:${selected.lastModified}`}>
+                  <span>CSV</span><strong>{selected.name}</strong><small>{(selected.size / 1024).toFixed(1)} KB</small>
+                  <button aria-label={`Remove ${selected.name}`} onClick={() => setFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))}>×</button>
+                </div>
+              ))}
+            </div>}
             <div
               className={`composer ${dragging ? "dragging" : ""}`}
               onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
               onDragLeave={() => setDragging(false)}
               onDrop={onDrop}
             >
-              <input ref={inputRef} type="file" accept=".csv,text/csv" onChange={onFileChange} hidden />
-              <button className="attach-button" onClick={() => inputRef.current?.click()} aria-label="Choose CSV file">＋</button>
+              <input ref={inputRef} type="file" accept=".csv,text/csv" multiple onChange={onFileChange} hidden />
+              <button className="attach-button" onClick={() => inputRef.current?.click()} aria-label="Choose CSV files">＋</button>
               <button className="upload-copy" onClick={() => inputRef.current?.click()}>
-                <strong>{file ? "CSV ready to analyze" : "Upload a CSV to begin"}</strong>
-                <small>{file ? "Send when you’re ready" : "Drag and drop or choose a file · max 15 MB"}</small>
+                <strong>{files.length ? `${files.length} CSV${files.length === 1 ? "" : "s"} ready to analyze` : "Upload CSVs to begin"}</strong>
+                <small>{files.length ? "Files will be processed one by one" : "Drag and drop or choose files · max 15 MB each"}</small>
               </button>
-              <button className="send-button" disabled={!file || working} onClick={analyze} aria-label="Analyze CSV">↑</button>
+              <button className="send-button" disabled={!files.length || working} onClick={analyze} aria-label="Analyze CSV files">↑</button>
             </div>
             {error && <p className="error-text">{error}</p>}
             <p className="composer-note">AI-generated interpretation can make mistakes. Verify important findings.</p>
