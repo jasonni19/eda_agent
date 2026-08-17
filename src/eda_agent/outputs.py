@@ -1,4 +1,5 @@
-"""Create human-readable and bundled downloadable EDA outputs."""
+"""Create human-readable and bundled downloadable EDA outputs. 
+This creates the markdown report and the zip file of the plots."""
 
 from __future__ import annotations
 
@@ -16,7 +17,7 @@ def markdown_filename(source_file: str) -> str:
     safe_stem = "".join(character if character.isalnum() or character in "-_" else "_" for character in stem)
     return f"{safe_stem}_eda_report.md"
 
-
+# this function converts the validated report into human-readable Markdown
 def render_markdown_report(report: EDAReport) -> str:
     """Convert the validated report into concise, human-readable Markdown."""
     lines = [
@@ -98,6 +99,7 @@ def render_markdown_report(report: EDAReport) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+# this function bundles the rendered PNG artifacts into an API-only downloadable ZIP data URI
 def plots_zip_data_uri(plot_images: list[dict[str, str]]) -> str:
     """Bundle rendered PNG artifacts into an API-only downloadable ZIP data URI."""
     buffer = BytesIO()

@@ -12,6 +12,7 @@ type ChatMessage = {
   plots?: PlotArtifact[];
   markdown?: { filename: string; content: string };
   plotsArchive?: { filename: string; data_uri: string };
+  analysisTrace?: TraceStep[];
 };
 
 type PlotArtifact = {
@@ -19,6 +20,15 @@ type PlotArtifact = {
   rationale?: string;
   filename?: string | null;
   image_data_uri?: string | null;
+};
+
+type TraceStep = {
+  tool: string;
+  label: string;
+  operation: string;
+  arguments: Record<string, unknown>;
+  status: "completed" | "error";
+  result_preview: string;
 };
 
 const progressSteps = [  // just a visual progress indicator
@@ -48,11 +58,13 @@ export default function Home() {
   const [queuePosition, setQueuePosition] = useState({ current: 0, total: 0 });
   const [error, setError] = useState("");
   const [visibleChartMessages, setVisibleChartMessages] = useState<Set<number>>(new Set());
+  const [visibleTraceMessages, setVisibleTraceMessages] = useState<Set<number>>(new Set());
+  const [expandedTraceSteps, setExpandedTraceSteps] = useState<Set<string>>(new Set());
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 1,
       role: "assistant",
-      text: "Hi — I’m Obi, your EDA assistant. Upload a CSV and I’ll inspect its quality, distributions, relationships, and unusual values, then package the findings as a validated JSON report.",
+      text: "Hi — I’m Obi, your EDA assistant. Upload a CSV or multiple CSVs and I’ll inspect its quality, distributions, relationships, and unusual values, then package the findings as a validated JSON report. I will also provide downloadable charts and a markdown report.",
     },
   ]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -132,6 +144,7 @@ export default function Home() {
           const plots = Array.isArray(body.plot_images) ? body.plot_images as PlotArtifact[] : [];
           const markdown = body.markdown_report as { filename: string; content: string };
           const plotsArchive = body.plots_archive as { filename: string; data_uri: string };
+          const analysisTrace = Array.isArray(body.analysis_trace) ? body.analysis_trace as TraceStep[] : [];
           setProgress(progressSteps.length - 1);
           setMessages((current) => [
             ...current,
@@ -143,6 +156,7 @@ export default function Home() {
               plots,
               markdown,
               plotsArchive,
+              analysisTrace,
             },
           ]);
         } catch (caught) {
@@ -207,6 +221,25 @@ export default function Home() {
     });
   }
 
+  function toggleTrace(messageId: number) {
+    setVisibleTraceMessages((current) => {
+      const next = new Set(current);
+      if (next.has(messageId)) next.delete(messageId);
+      else next.add(messageId);
+      return next;
+    });
+  }
+
+  function toggleTraceStep(messageId: number, stepIndex: number) {
+    const key = `${messageId}:${stepIndex}`;
+    setExpandedTraceSteps((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -239,6 +272,53 @@ export default function Home() {
                         <section className="executive-summary">
                           <strong>Executive summary</strong>
                           <p>{message.report.executive_summary}</p>
+                        </section>
+                      )}
+                      {message.analysisTrace && message.analysisTrace.length > 0 && (
+                        <section className="analysis-trace">
+                          <button
+                            className="trace-toggle"
+                            type="button"
+                            aria-expanded={visibleTraceMessages.has(message.id)}
+                            onClick={() => toggleTrace(message.id)}
+                          >
+                            <span>{visibleTraceMessages.has(message.id) ? "⌃" : "⌄"}</span>
+                            {visibleTraceMessages.has(message.id) ? "Hide analysis steps" : "Show analysis steps"}
+                            <small>{message.analysisTrace.length} tool calls</small>
+                          </button>
+                          {visibleTraceMessages.has(message.id) && (
+                            <div className="trace-steps">
+                              {message.analysisTrace.map((step, stepIndex) => {
+                                const stepKey = `${message.id}:${stepIndex}`;
+                                const expanded = expandedTraceSteps.has(stepKey);
+                                return (
+                                  <article className={`trace-step ${step.status}`} key={stepKey}>
+                                    <button
+                                      className="trace-step-heading"
+                                      type="button"
+                                      aria-expanded={expanded}
+                                      onClick={() => toggleTraceStep(message.id, stepIndex)}
+                                    >
+                                      <span className="trace-chevron">{expanded ? "⌄" : "›"}</span>
+                                      <span className="trace-check">{step.status === "completed" ? "✓" : "!"}</span>
+                                      <strong>{step.label}</strong>
+                                      <code>{step.tool}</code>
+                                    </button>
+                                    <p>{step.operation}</p>
+                                    {expanded && (
+                                      <div className="trace-detail">
+                                        <div><small>Operation</small><code>{step.operation}</code></div>
+                                        {Object.keys(step.arguments ?? {}).length > 0 && (
+                                          <div><small>Parameters</small><pre>{JSON.stringify(step.arguments, null, 2)}</pre></div>
+                                        )}
+                                        <div><small>Result preview</small><pre>{step.result_preview}</pre></div>
+                                      </div>
+                                    )}
+                                  </article>
+                                );
+                              })}
+                            </div>
+                          )}
                         </section>
                       )}
                       {message.plots && message.plots.some((plot) => plot.image_data_uri) && (

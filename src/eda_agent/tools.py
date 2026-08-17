@@ -35,8 +35,8 @@ def _records(frame: pd.DataFrame) -> list[dict[str, Any]]:
     ]
 
 
-def build_eda_tools(df: pd.DataFrame) -> list[Any]:
-    """Bind one DataFrame to read-only analysis tools. There are currently 7 tools available. 
+def build_eda_tools(df: pd.DataFrame) -> list[Any]: # return the list of tools
+    """Bind one DataFrame to read-only analysis tools. There are currently 12 tools available.
     They are the following:
     - overview: Inspect dataset dimensions, column types, non-null counts, and cardinality.
     - missing_values: Count and calculate the percentage of missing values in every column.
@@ -44,7 +44,12 @@ def build_eda_tools(df: pd.DataFrame) -> list[Any]:
     - correlations: Find the strongest Pearson correlations between pairs of numeric columns.
     - outliers: Detect numeric outliers with the 1.5 times IQR rule and report boundaries/counts.
     - duplicates: Count fully duplicated rows, excluding the first occurrence.
-    - value_counts: Get the ten most common values for categorical-like columns."""
+    - value_counts: Get the ten most common values for categorical-like columns.
+    - feature_analysis: Classify feature types and rank plausible target columns with transparent heuristics.
+    - distributions: Measure numeric skew and zeros plus categorical concentration.
+    - redundancy_analysis: Find constant, near-constant, and highly correlated features.
+    - preprocessing_advice: Generate transformation and exclusion evidence from measured column properties.
+    - plot_plan: Select bounded EDA plot specifications appropriate for this dataset."""
 
     @tool("overview")
     def overview() -> dict[str, Any]:

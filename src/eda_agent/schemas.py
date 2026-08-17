@@ -1,4 +1,4 @@
-"""The contract for the JSON report produced by the agent. this defines the structure of the report to be produced by the agent."""
+"""this defines the structure of the report to be produced by the agent."""
 
 from __future__ import annotations
 
@@ -25,6 +25,7 @@ class DatasetSummary(BaseModel):
     columns: list[ColumnSummary]
 
 
+# this is the schema for the findings that will be returned by the agent.
 class Finding(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -50,6 +51,7 @@ class Finding(BaseModel):
     recommendation: str = Field(min_length=1)
 
 
+# this is the schema for the target recommendations that will be returned by the agent.
 class TargetRecommendation(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -60,6 +62,7 @@ class TargetRecommendation(BaseModel):
     cautions: list[str]
 
 
+# this is the schema for the transformation recommendations that will be returned by the agent.
 class TransformationRecommendation(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -68,6 +71,7 @@ class TransformationRecommendation(BaseModel):
     rationale: str = Field(min_length=1)
 
 
+# this is the schema for the feature exclusions that will be returned by the agent.
 class FeatureExclusion(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -76,6 +80,7 @@ class FeatureExclusion(BaseModel):
     action: Literal["exclude", "review"]
 
 
+# this is the schema for the plot plan that will be returned by the agent.
 class PlotPlan(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -88,6 +93,7 @@ class PlotPlan(BaseModel):
     rationale: str = Field(min_length=1)
 
 
+# this is the schema for the ML recommendations that will be returned by the agent.
 class MLRecommendation(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -96,9 +102,9 @@ class MLRecommendation(BaseModel):
     rationale: str = Field(min_length=1)
 
 
+# this is the schema for the EDA report that will be returned by the agent.
 class EDAReport(BaseModel):
-    """This is the Machine-readable final deliverable. 
-    It is a JSON schema that defines the structure of the report to be produced by the agent."""
+    """This is the Machine-readable final deliverable, a JSON schema that defines the structure of the report to be produced by the agent."""
 
     model_config = ConfigDict(extra="forbid")
 

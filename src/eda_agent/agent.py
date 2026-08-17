@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+import json
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
+from langchain.messages import AIMessage, ToolMessage
 
 from .schemas import EDAReport
 from .tools import build_eda_tools
@@ -27,6 +30,58 @@ plots. Give downstream ML advice covering problem framing, preprocessing, valida
 and modeling when supported. Return only the requested structured report.
 """
 
+TOOL_TRACE_METADATA = {
+    "overview": ("Inspecting dataset", "df.info() and column cardinality"),
+    "missing_values": ("Checking missing values", "df.isna().sum()"),
+    "statistics": ("Calculating descriptive statistics", "df.describe(include='all')"),
+    "correlations": ("Analyzing correlations", "numeric_df.corr(method='pearson')"),
+    "outliers": ("Detecting outliers", "1.5 × IQR screening"),
+    "duplicates": ("Checking duplicate rows", "df.duplicated().sum()"),
+    "value_counts": ("Inspecting categorical values", "series.value_counts().head(10)"),
+    "feature_analysis": ("Classifying features and target candidates", "dtype and cardinality heuristics"),
+    "distributions": ("Analyzing distributions", "skewness, zeros, ranges, and concentration"),
+    "redundancy_analysis": ("Checking feature redundancy", "constants, identifiers, and |correlation| ≥ 0.90"),
+    "preprocessing_advice": ("Planning preprocessing", "measured transformation and exclusion rules"),
+    "plot_plan": ("Selecting EDA plots", "plot rules based on inferred column types"),
+}
+
+
+def _trace_preview(content: Any, limit: int = 2500) -> str:
+    """Create a bounded, display-safe preview of a tool result."""
+    if isinstance(content, str):
+        preview = content
+    else:
+        preview = json.dumps(content, indent=2, default=str)
+    if len(preview) > limit:
+        return preview[:limit].rstrip() + "\n… result preview truncated"
+    return preview
+
+
+def _build_tool_trace(messages: list[Any]) -> list[dict[str, Any]]:
+    """Extract auditable tool activity without exposing private model reasoning."""
+    calls: dict[str, dict[str, Any]] = {}
+    for message in messages:
+        if isinstance(message, AIMessage):
+            for call in message.tool_calls:
+                calls[str(call.get("id", ""))] = call
+
+    trace: list[dict[str, Any]] = []
+    for message in messages:
+        if not isinstance(message, ToolMessage):
+            continue
+        call = calls.get(str(message.tool_call_id), {})
+        name = str(message.name or call.get("name") or "tool")
+        label, operation = TOOL_TRACE_METADATA.get(name, (name.replace("_", " ").title(), name))
+        trace.append({
+            "tool": name,
+            "label": label,
+            "operation": operation,
+            "arguments": call.get("args", {}),
+            "status": "error" if getattr(message, "status", None) == "error" else "completed",
+            "result_preview": _trace_preview(message.content),
+        })
+    return trace
+
 
 def load_csv(path: Path) -> pd.DataFrame:
     """Load a CSV with conservative defaults and a useful error for empty input."""
@@ -35,8 +90,10 @@ def load_csv(path: Path) -> pd.DataFrame:
     return pd.read_csv(path, low_memory=False)
 
 
-def run_eda(csv_path: Path, output_path: Path, model_name: str) -> EDAReport:
-    """Run the tool-calling agent, validate its response, then save JSON."""
+def run_eda_detailed(
+    csv_path: Path, output_path: Path, model_name: str
+) -> tuple[EDAReport, list[dict[str, Any]]]:
+    """Run the agent and return both its validated report and auditable tool trace."""
     csv_path = csv_path.resolve()
     df = load_csv(csv_path)
     model = init_chat_model(model_name, temperature=0)
@@ -65,4 +122,10 @@ def run_eda(csv_path: Path, output_path: Path, model_name: str) -> EDAReport:
     report = EDAReport.model_validate(result["structured_response"])
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
+    return report, _build_tool_trace(result.get("messages", []))
+
+
+def run_eda(csv_path: Path, output_path: Path, model_name: str) -> EDAReport:
+    """Run the tool-calling agent, validate its response, then save JSON."""
+    report, _ = run_eda_detailed(csv_path, output_path, model_name)
     return report
