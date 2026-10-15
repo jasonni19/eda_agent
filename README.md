@@ -51,6 +51,44 @@ then download individual PNG files or these three outputs:
 
 CLI runs create the same JSON and Markdown reports plus a real `eda_plots/` directory.
 
+### Bayesian Optimization setup
+
+After each web analysis, a BO setup form appears below the report. Choose a numeric
+objective and maximize/minimize, explicitly select the columns you can control,
+and edit continuous/integer bounds or allowed observed categories. Observed ranges
+are suggestions, not guaranteed feasible operating limits. Optionally add simple
+`<=`, `>=`, or `==` constraints (categorical constraints support equality).
+Constraints on columns outside the selected decision variables are labeled as
+requirements that cannot be directly enforced by changing that column alone.
+
+Review and confirm the settings to save and download `bo_problem.json`. This is a
+deterministic step; the LLM only supplies optional objective suggestions. No BO
+analyzer, surrogate selection, or optimization engine runs yet.
+
+Successful web analyses retain `dataset.csv` and `eda_report.json` under
+`analysis_sessions/<session_id>/`; confirmed settings are saved as
+`bo_problem.json` in that same directory. Set `EDA_SESSION_DIR` in `.env` to choose
+another storage location. This local storage persists across API restarts and has
+no automatic expiry; remove session directories when their artifacts are no longer needed.
+The original upload filename remains in the EDA report.
+
+API integration points:
+
+- `POST /analyze`: existing response plus `session_id` and deterministic `dataset_columns`.
+- `GET /analyses/{session_id}/bo-setup`: column metadata and EDA target suggestions.
+- `POST /analyses/{session_id}/bo-problem`: validates against the saved CSV and atomically saves the problem.
+- `GET /analyses/{session_id}/bo-problem`: retrieves the saved problem (404 until saved).
+
+The Pydantic `BOProblem` model in `src/eda_agent/bo.py` defines the JSON contract
+and is also exposed in FastAPI's OpenAPI schema at `http://127.0.0.1:8000/docs`.
+The next pipeline stage can read the session's `bo_problem.json` or use the GET endpoint.
+See `examples/bo_problem.json` for an example. Validation rejects duplicate variables,
+non-numeric objectives, invalid categories/bounds/constraints, and conflicting constraints
+on decision variables; numeric bounds may extend beyond observed ranges.
+
+Run backend validation/integration tests with `python -m pytest`. Run the BO form's
+component-rendering tests from `web/` with `npm run test:bo`.
+
 Optional arguments: You can specify what model for the agent to use.
 
 ```powershell

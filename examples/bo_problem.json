@@ -1,0 +1,11 @@
+{
+  "objective": { "column": "efficiency", "direction": "maximize" },
+  "decision_variables": [
+    { "name": "temperature", "type": "continuous", "bounds": [20, 100] },
+    { "name": "pressure", "type": "integer", "bounds": [1, 10] },
+    { "name": "material", "type": "categorical", "categories": ["Steel", "Aluminum"] }
+  ],
+  "constraints": [
+    { "variable": "cost", "operator": "<=", "value": 100 }
+  ]
+}

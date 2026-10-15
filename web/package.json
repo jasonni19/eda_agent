@@ -6,6 +6,7 @@
     "node": ">=22.13.0"
   },
   "scripts": {
+    "test:bo": "node --test tests/bo-setup.test.mjs",
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",

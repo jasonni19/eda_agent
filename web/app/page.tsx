@@ -2,6 +2,7 @@
 
 import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import BOSetup, { DatasetColumn } from "./bo-setup";
 
 type ChatMessage = {
   id: number;
@@ -13,6 +14,8 @@ type ChatMessage = {
   markdown?: { filename: string; content: string };
   plotsArchive?: { filename: string; data_uri: string };
   analysisTrace?: TraceStep[];
+  sessionId?: string;
+  datasetColumns?: DatasetColumn[];
 };
 
 type PlotArtifact = {
@@ -157,6 +160,8 @@ export default function Home() {
               markdown,
               plotsArchive,
               analysisTrace,
+              sessionId: body.session_id,
+              datasetColumns: body.dataset_columns,
             },
           ]);
         } catch (caught) {
@@ -368,6 +373,11 @@ export default function Home() {
                           <button onClick={() => downloadPlotsArchive(message.plotsArchive!)}>Download <span>↓</span></button>
                         </div>
                       )}
+                      {message.sessionId && message.datasetColumns && <BOSetup
+                        sessionId={message.sessionId}
+                        columns={message.datasetColumns}
+                        recommendations={Array.isArray(message.report.target_recommendations) ? message.report.target_recommendations : []}
+                      />}
                     </>
                   )}
                 </div>

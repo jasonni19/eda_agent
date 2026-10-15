@@ -148,3 +148,24 @@ body { background-image: linear-gradient(rgba(17,19,23,.025) 1px, transparent 1p
   .composer { min-height: 62px; }
   .upload-copy small { max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+
+.bo-setup { margin-top: 22px; border-top: 2px solid var(--line); padding-top: 18px; min-width: 0; }
+.bo-setup h2 { font-size: 17px; margin: 0 0 8px; }
+.bo-setup fieldset { min-width: 0; margin: 18px 0 0; padding: 14px; border: 1px solid var(--line); border-radius: 8px; }
+.bo-setup legend { padding: 0 6px; font-size: 13px; font-weight: 700; }
+.bo-setup label { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: 12px; }
+.bo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(145px, 100%), 1fr)); gap: 10px; margin: 12px 0; }
+.bo-setup select, .bo-setup input[type=number] { width: 100%; min-width: 0; padding: 9px; background: white; border: 1px solid var(--line-bright); border-radius: 4px; color: var(--text); font: inherit; }
+.bo-setup .bo-check { flex-direction: row; align-items: center; gap: 8px; margin: 10px 0; overflow-wrap: anywhere; }
+.bo-check input { flex: 0 0 auto; }
+.bo-check small { margin-left: auto; color: var(--muted); }
+.bo-variable, .bo-constraint { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.bo-categories { max-height: 180px; overflow: auto; font-size: 12px; }
+.bo-setup .bo-hint { margin: 8px 0; padding: 8px; background: var(--blue-dim); font-size: 12px; }
+.bo-setup .bo-error { color: var(--danger); font-size: 12px; margin: 10px 0; }
+.bo-setup button { padding: 9px 12px; margin-top: 10px; border: 1px solid var(--line-bright); border-radius: 4px; background: white; cursor: pointer; font-size: 12px; }
+.bo-setup button.bo-primary { background: var(--yellow); border-color: #d8cf00; font-weight: 700; }
+.bo-setup button:disabled { opacity: .5; cursor: not-allowed; }
+.bo-setup pre { max-height: 280px; overflow: auto; padding: 10px; background: var(--panel-2); font: 11px/1.5 Consolas, monospace; }
+.bo-setup details { margin: 12px 0; font-size: 12px; }
+.bo-setup :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
