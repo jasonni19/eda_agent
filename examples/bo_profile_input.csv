@@ -1,0 +1,9 @@
+efficiency,temperature,pressure,material,cost
+0.5,20,1,Steel,50
+0.6,30,2,Aluminum,60
+0.7,40,3,Steel,80
+0.75,40,3,Steel,85
+0.8,80,8,Aluminum,110
+0.9,110,9,Steel,90
+0.65,,4,Steel,70
+,60,5,Aluminum,95

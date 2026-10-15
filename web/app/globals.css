@@ -169,3 +169,16 @@ body { background-image: linear-gradient(rgba(17,19,23,.025) 1px, transparent 1p
 .bo-setup pre { max-height: 280px; overflow: auto; padding: 10px; background: var(--panel-2); font: 11px/1.5 Consolas, monospace; }
 .bo-setup details { margin: 12px 0; font-size: 12px; }
 .bo-setup :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.bo-profile { margin-top: 20px; padding: 16px; border: 1px solid #b9dff2; border-radius: 8px; background: #f8fcff; }
+.bo-profile h3 { margin: 0 0 10px; font-size: 15px; }
+.bo-profile-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 10px; margin: 14px 0; }
+.bo-profile-metrics > div { padding: 12px; border: 1px solid var(--line); border-radius: 6px; background: white; }
+.bo-profile-metrics dt { font-size: 11px; color: var(--muted); }
+.bo-profile-metrics dd { margin: 5px 0 0; font-size: 23px; font-weight: 700; }
+.bo-profile-table { width: 100%; margin: 12px 0; border-collapse: collapse; font-size: 12px; text-align: left; }
+.bo-profile-table caption { padding: 8px 0; text-align: left; font-weight: 700; }
+.bo-profile-table th, .bo-profile-table td { padding: 8px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; vertical-align: top; }
+.bo-profile-table th { font-weight: 600; }
+.bo-table-scroll { overflow-x: auto; }
+.bo-profile-warnings { padding: 10px; border-left: 3px solid #d6a03a; background: #fff9ea; }
+.bo-profile-warnings ul { padding-left: 20px; line-height: 1.6; }

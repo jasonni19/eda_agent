@@ -18,6 +18,9 @@ from .outputs import markdown_filename, plots_zip_data_uri, render_markdown_repo
 from .plots import render_plot_images
 from .bo import BOProblem, column_metadata, validate_problem
 from .sessions import session_directory, storage_root
+from .bo_analyzer import analyze_bo_problem, problem_fingerprint
+from .bo_profile import BOAnalyzerConfig, BOProfile
+from .bo_service import BO_ARTIFACT_LOCK, generate_session_profile, write_artifact
 
 load_dotenv()
 
@@ -103,16 +106,18 @@ def bo_setup(session_id: str) -> dict:
 def save_bo_problem(session_id: str, problem: BOProblem) -> BOProblem:
     directory = session_directory(session_id)
     try:
-        validate_problem(problem, load_csv(directory / "dataset.csv"))
+        with BO_ARTIFACT_LOCK:
+            frame = load_csv(directory / "dataset.csv")
+            validate_problem(problem, frame)
+            report = json.loads((directory / "eda_report.json").read_text(encoding="utf-8"))
+            profile = analyze_bo_problem(frame, report, problem)
+            # Compute and validate both artifacts before replacing either one.
+            write_artifact(directory / "bo_problem.json", problem.model_dump_json(indent=2))
+            write_artifact(directory / "bo_profile.json", profile.model_dump_json(indent=2))
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
-    # Unique temporary names and atomic replacement prevent partial artifacts.
-    temporary = directory / f"bo_problem.{uuid4().hex}.tmp"
-    try:
-        temporary.write_text(problem.model_dump_json(indent=2), encoding="utf-8")
-        temporary.replace(directory / "bo_problem.json")
-    finally:
-        temporary.unlink(missing_ok=True)
+    except OSError as error:
+        raise HTTPException(status_code=500, detail="Could not read or save this session's BO artifacts.") from error
     return problem
 
 
@@ -121,7 +126,41 @@ def get_bo_problem(session_id: str) -> BOProblem:
     path = session_directory(session_id) / "bo_problem.json"
     if not path.is_file():
         raise HTTPException(status_code=404, detail="No BO configuration has been saved for this analysis.")
-    return BOProblem.model_validate_json(path.read_text(encoding="utf-8"))
+    with BO_ARTIFACT_LOCK:
+        return BOProblem.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+@app.post("/analyses/{session_id}/bo-profile", response_model=BOProfile)
+def generate_bo_profile(session_id: str, config: BOAnalyzerConfig | None = None) -> BOProfile:
+    directory = session_directory(session_id)
+    with BO_ARTIFACT_LOCK:
+        if not (directory / "bo_problem.json").is_file():
+            raise HTTPException(status_code=404, detail="Save a BO problem before generating its profile.")
+        try:
+            return generate_session_profile(directory, config)
+        except (ValueError, TypeError) as error:
+            raise HTTPException(status_code=422, detail=f"Could not profile this BO problem: {error}") from error
+        except OSError as error:
+            raise HTTPException(status_code=500, detail="Could not read or save this session's BO artifacts.") from error
+
+
+@app.get("/analyses/{session_id}/bo-profile", response_model=BOProfile)
+def get_bo_profile(session_id: str) -> BOProfile:
+    directory = session_directory(session_id)
+    with BO_ARTIFACT_LOCK:
+        path = directory / "bo_profile.json"
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="No BO profile has been generated for this analysis.")
+        try:
+            profile = BOProfile.model_validate_json(path.read_text(encoding="utf-8"))
+            problem = BOProblem.model_validate_json((directory / "bo_problem.json").read_text(encoding="utf-8"))
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail="Stored BO artifacts are invalid; regenerate the profile.") from error
+        except OSError as error:
+            raise HTTPException(status_code=500, detail="Could not read this session's BO artifacts.") from error
+        if profile.problem_sha256 != problem_fingerprint(problem):
+            raise HTTPException(status_code=409, detail="BO profile is stale; regenerate it for the current problem.")
+        return profile
 
 
 def main() -> None:

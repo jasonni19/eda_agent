@@ -97,12 +97,15 @@ def _same_value(left, right) -> bool:
     return isinstance(left, bool) == isinstance(right, bool) and left == right
 
 
-def validate_problem(problem: BOProblem, frame: pd.DataFrame) -> BOProblem:
+def validate_problem(
+    problem: BOProblem, frame: pd.DataFrame, *, require_observations: bool = True,
+    allow_missing_constraint_columns: bool = False,
+) -> BOProblem:
     columns = {column["name"]: column for column in column_metadata(frame)}
     objective = columns.get(problem.objective.column)
     if objective is None or not objective["numeric"]:
         raise ValueError("Choose an existing numeric objective column.")
-    if objective["bounds"] is None:
+    if require_observations and objective["bounds"] is None:
         raise ValueError("The objective needs at least one finite numeric observation.")
     variables = {variable.name: variable for variable in problem.decision_variables}
     for variable in problem.decision_variables:
@@ -112,7 +115,7 @@ def validate_problem(problem: BOProblem, frame: pd.DataFrame) -> BOProblem:
         if variable.type == "categorical":
             observed = {(isinstance(value, bool), value) for value in column["categories"]}
             chosen = [(isinstance(value, bool), value) for value in variable.categories]
-            if not set(chosen).issubset(observed):
+            if require_observations and not set(chosen).issubset(observed):
                 raise ValueError(f"{variable.name}: choose categories observed in this dataset.")
             if len(chosen) != len(set(chosen)):
                 raise ValueError(f"{variable.name}: categories must be unique.")
@@ -121,6 +124,8 @@ def validate_problem(problem: BOProblem, frame: pd.DataFrame) -> BOProblem:
     for constraint in problem.constraints:
         column = columns.get(constraint.variable)
         if column is None:
+            if allow_missing_constraint_columns:
+                continue
             raise ValueError(f"Unknown constraint column: {constraint.variable}.")
         variable = variables.get(constraint.variable)
         categorical = (variable is not None and variable.type == "categorical") or not column["numeric"]

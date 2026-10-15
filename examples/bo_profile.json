@@ -1,0 +1,162 @@
+{
+  "schema_version": "1.0",
+  "problem_sha256": "2394f20f9f73ac79660fd7d42846677f75157e640e2d99dc22f9c32ed909332d",
+  "thresholds": {
+    "high_correlation_threshold": 0.85,
+    "outlier_iqr_multiplier": 1.5,
+    "high_outlier_fraction": 0.05,
+    "strong_skewness_threshold": 1.0,
+    "high_dimensional_threshold": 20,
+    "low_sample_dimension_ratio": 10.0,
+    "high_categorical_cardinality": 10,
+    "near_constant_fraction": 0.95,
+    "near_constant_absolute_tolerance": 1e-12,
+    "near_constant_relative_tolerance": 1e-8
+  },
+  "dataset": {
+    "n_samples": 8,
+    "n_complete_samples": 6,
+    "n_complete_in_domain_samples": 5,
+    "n_training_samples": 4,
+    "sample_dimension_ratio": 2.6666666666666665,
+    "training_sample_dimension_ratio": 1.3333333333333333,
+    "small_sample_relative_to_dimensions": true
+  },
+  "search_space": {
+    "n_dimensions": 3,
+    "continuous_variables": 1,
+    "integer_variables": 1,
+    "categorical_variables": 1,
+    "space_type": "mixed",
+    "mixed_space": true,
+    "categorical_cardinality": {
+      "material": 2
+    },
+    "categorical_combinations": 2,
+    "discrete_search_space_size": 20,
+    "full_cardinality": "non_finite",
+    "full_search_space_size": null,
+    "numeric_domains": {
+      "temperature": {
+        "bounds": [
+          20,
+          100
+        ],
+        "range": 80.0
+      },
+      "pressure": {
+        "bounds": [
+          1,
+          10
+        ],
+        "range": 9.0
+      }
+    },
+    "high_dimensional": false,
+    "high_categorical_cardinality": false
+  },
+  "data_quality": {
+    "missing_values_present": true,
+    "decision_missing_values_present": true,
+    "objective_missing_values_present": true,
+    "missing_percentage": {
+      "temperature": 12.5,
+      "pressure": 0.0,
+      "material": 0.0,
+      "efficiency": 12.5
+    },
+    "invalid_value_counts": {
+      "temperature": 0,
+      "pressure": 0,
+      "efficiency": 0,
+      "material": 0
+    },
+    "pairwise_correlations": [
+      {
+        "left": "temperature",
+        "right": "pressure",
+        "correlation": 0.9832638270829752
+      }
+    ],
+    "max_absolute_correlation": 0.9832638270829752,
+    "highly_correlated_pairs": 1,
+    "high_correlation": true,
+    "outliers": {
+      "temperature": {
+        "n_valid": 7,
+        "count": 0,
+        "percentage": 0.0,
+        "lower_fence": -17.5,
+        "upper_fence": 122.5
+      },
+      "pressure": {
+        "n_valid": 8,
+        "count": 0,
+        "percentage": 0.0,
+        "lower_fence": -1.75,
+        "upper_fence": 10.25
+      },
+      "efficiency": {
+        "n_valid": 7,
+        "count": 0,
+        "percentage": 0.0,
+        "lower_fence": 0.39999999999999997,
+        "upper_fence": 1.0
+      }
+    },
+    "outliers_present": false,
+    "substantial_outliers_present": false,
+    "duplicate_configurations": 1,
+    "constant_decision_variables": [],
+    "near_constant_decision_variables": [],
+    "repeated_objective": {
+      "repeated_configurations": 1,
+      "observations_at_repeated_configurations": 2,
+      "configurations_with_varying_objective": 1,
+      "max_objective_range": 0.050000000000000044
+    }
+  },
+  "objective": {
+    "column": "efficiency",
+    "direction": "maximize",
+    "n_valid": 7,
+    "mean": 0.7000000000000001,
+    "standard_deviation": 0.13228756555322954,
+    "minimum": 0.5,
+    "maximum": 0.9,
+    "skewness": -1.7702923799186331e-15,
+    "unique_values": 7,
+    "near_constant": false,
+    "strong_skewness": false
+  },
+  "coverage": {
+    "in_bounds_percentage": 75.0,
+    "in_bounds_samples": 6,
+    "out_of_bounds_samples": 1,
+    "unevaluable_domain_samples": 1,
+    "distinct_configurations": 6,
+    "constraint_observations": [
+      {
+        "variable": "cost",
+        "operator": "<=",
+        "value": 100,
+        "directly_controllable": false,
+        "evaluated_samples": 8,
+        "violation_count": 1,
+        "unevaluable_samples": 0
+      }
+    ],
+    "constraint_violation_samples": 1,
+    "constraint_unevaluable_samples": 0
+  },
+  "warnings": [
+    "Constraint on cost is not directly controllable through the decision variables.",
+    "Selected columns contain missing values.",
+    "Training observations are few relative to the number of decision variables.",
+    "Selected numeric decision variables contain highly correlated pairs.",
+    "Duplicate decision-variable configurations are present.",
+    "Repeated configurations have differing objectives; this does not establish a noise distribution or noise variance.",
+    "Some observations are outside configured bounds, integer domains, or allowed categories.",
+    "Some observations violate configured constraints."
+  ]
+}
