@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import SurrogateResults from "./surrogate-results";
 
 type Category = string | number | boolean;
 export type DatasetColumn = {
@@ -179,7 +180,7 @@ export default function BOSetup({ sessionId, columns, recommendations }: {
     downloadJson(saved, "bo_problem.json");
   }
 
-  return <section className="bo-setup" aria-label="Bayesian Optimization setup">
+  return <section id="bo-setup" className="bo-setup" aria-label="Bayesian Optimization setup">
     <h2>Set up Bayesian Optimization</h2>
     <p>Define what to improve and what you can control. Confirm your setup to run the deterministic BO Problem Analyzer and review its results below.</p>
     <fieldset disabled={saving || profileLoading}>
@@ -268,5 +269,6 @@ export default function BOSetup({ sessionId, columns, recommendations }: {
         <button type="button" disabled={profileLoading || saving} onClick={loadProfile}>Retry loading analyzer results</button></div>}
       {profile && <BOProfileSummary profile={profile} />}
     </section>
+    {profile && <SurrogateResults sessionId={sessionId} />}
   </section>;
 }

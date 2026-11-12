@@ -91,12 +91,13 @@ def load_csv(path: Path) -> pd.DataFrame:
 
 
 def run_eda_detailed(
-    csv_path: Path, output_path: Path, model_name: str
+    csv_path: Path, output_path: Path, model_name: str, *, callbacks=None
 ) -> tuple[EDAReport, list[dict[str, Any]]]:
     """Run the agent and return both its validated report and auditable tool trace."""
     csv_path = csv_path.resolve()
     df = load_csv(csv_path)
-    model = init_chat_model(model_name, temperature=0)
+    model = init_chat_model(model_name, temperature=0,
+                            **({"timeout": 60, "max_retries": 0} if callbacks is not None else {}))
     agent = create_agent(
         model=model,
         tools=build_eda_tools(df), # this is the list of tools that the agent will use to analyze the data
@@ -115,7 +116,8 @@ def run_eda_detailed(
                     ),
                 }
             ]
-        }
+        },
+        **({"config": {"callbacks": callbacks, "recursion_limit": 40}} if callbacks is not None else {}),
     )
     
     

@@ -1,0 +1,65 @@
+{
+  "best": "xgboost",
+  "dropout": 0.15,
+  "engineered_features": {
+    "bedrooms_per_room": "AveBedrms / AveRooms",
+    "population_per_household": "AveOccup",
+    "rooms_per_household": "AveRooms"
+  },
+  "features": [
+    "MedInc",
+    "HouseAge",
+    "AveRooms",
+    "AveBedrms",
+    "Population",
+    "AveOccup",
+    "Latitude",
+    "Longitude",
+    "rooms_per_household",
+    "bedrooms_per_room",
+    "population_per_household"
+  ],
+  "hidden_units": [
+    256,
+    128,
+    64
+  ],
+  "in_features": 11,
+  "models": {
+    "mlp": {
+      "best_epoch": 81,
+      "file": "model.safetensors",
+      "inputs": "StandardScaler(features)",
+      "scaler": "scaler.joblib",
+      "val_rmse": 0.5268877316773466
+    },
+    "xgboost": {
+      "best_iteration": 1084,
+      "file": "xgb.ubj",
+      "inputs": "unscaled features",
+      "val_rmse": 0.46705770144715314
+    }
+  },
+  "output": "price_usd = max(prediction, 0) * target_unit_usd",
+  "raw_features": [
+    "MedInc",
+    "HouseAge",
+    "AveRooms",
+    "AveBedrms",
+    "Population",
+    "AveOccup",
+    "Latitude",
+    "Longitude"
+  ],
+  "target": "MedHouseVal",
+  "target_unit_usd": 100000,
+  "versions": {
+    "huggingface_hub": "1.32.0",
+    "joblib": "1.6.0",
+    "numpy": "2.5.3",
+    "safetensors": "0.8.0",
+    "sklearn": "1.9.1",
+    "torch": "2.14.0+cpu",
+    "xgboost": "3.4.1"
+  }
+}

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import json
+import logging
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import uuid4
@@ -21,12 +22,16 @@ from .sessions import session_directory, storage_root
 from .bo_analyzer import analyze_bo_problem, problem_fingerprint
 from .bo_profile import BOAnalyzerConfig, BOProfile
 from .bo_service import BO_ARTIFACT_LOCK, generate_session_profile, write_artifact
+from .surrogates import SurrogateReport, recommend_surrogate, profile_fingerprint
+from .benchmark.api import router as benchmark_router
 
 load_dotenv()
 
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Object EDA API", version="0.1.0")
+app.include_router(benchmark_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
@@ -114,6 +119,7 @@ def save_bo_problem(session_id: str, problem: BOProblem) -> BOProblem:
             # Compute and validate both artifacts before replacing either one.
             write_artifact(directory / "bo_problem.json", problem.model_dump_json(indent=2))
             write_artifact(directory / "bo_profile.json", profile.model_dump_json(indent=2))
+            (directory / "surrogate_report.json").unlink(missing_ok=True)
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     except OSError as error:
@@ -161,6 +167,47 @@ def get_bo_profile(session_id: str) -> BOProfile:
         if profile.problem_sha256 != problem_fingerprint(problem):
             raise HTTPException(status_code=409, detail="BO profile is stale; regenerate it for the current problem.")
         return profile
+
+
+@app.post("/analyses/{session_id}/bo-recommend", response_model=SurrogateReport)
+def generate_surrogate_report(session_id: str) -> SurrogateReport:
+    directory = session_directory(session_id)
+    if not (directory / "dataset.csv").is_file():
+        raise HTTPException(status_code=404, detail="Session dataset is no longer available.")
+    # Snapshot under the lock; provider calls do not block other artifact operations.
+    with BO_ARTIFACT_LOCK:
+        profile = get_bo_profile(session_id)
+        problem = get_bo_problem(session_id)
+    report = recommend_surrogate(profile, problem)
+    with BO_ARTIFACT_LOCK:
+        current = get_bo_profile(session_id)
+        if profile_fingerprint(current) != report.profile_sha256:
+            raise HTTPException(status_code=409, detail="BO profile changed during recommendation; retry.")
+        try:
+            write_artifact(directory / "surrogate_report.json", report.model_dump_json(indent=2))
+            logger.info("Surrogate recommendation saved (source=%s)", report.source)
+        except OSError as error:
+            raise HTTPException(status_code=500, detail="Could not save surrogate report.") from error
+    return report
+
+
+@app.get("/analyses/{session_id}/bo-report", response_model=SurrogateReport)
+def get_surrogate_report(session_id: str) -> SurrogateReport:
+    directory = session_directory(session_id)
+    with BO_ARTIFACT_LOCK:
+        profile = get_bo_profile(session_id)
+        path = directory / "surrogate_report.json"
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="Generate a surrogate recommendation first.")
+        try:
+            report = SurrogateReport.model_validate_json(path.read_text(encoding="utf-8"))
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail="Stored recommendation is invalid; regenerate it.") from error
+        except OSError as error:
+            raise HTTPException(status_code=500, detail="Could not read surrogate report.") from error
+        if report.problem_sha256 != profile.problem_sha256 or report.profile_sha256 != profile_fingerprint(profile):
+            raise HTTPException(status_code=409, detail="Recommendation is stale; regenerate it.")
+        return report
 
 
 def main() -> None:

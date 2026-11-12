@@ -7,10 +7,11 @@
   },
   "scripts": {
     "test:bo": "node --test tests/bo-setup.test.mjs",
+    "test:benchmark": "node --test tests/benchmark.test.mjs",
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs",
+    "test": "npm run build && npm run test:bo && npm run test:benchmark",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },

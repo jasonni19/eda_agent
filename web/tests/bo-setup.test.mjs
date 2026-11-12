@@ -9,12 +9,24 @@ import ts from "typescript";
 
 // Compile the actual component without starting the Cloudflare hosting runtime.
 const require = createRequire(import.meta.url);
+function compile(source) {
+  return ts.transpileModule(source, { compilerOptions: {
+    jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020,
+  } }).outputText.replace(/from "(react(?:\/jsx-runtime)?)"/g,
+    (_, name) => `from ${JSON.stringify(pathToFileURL(require.resolve(name)).href)}`);
+}
+const resultsSource = await readFile(new URL("../app/surrogate-results.tsx", import.meta.url), "utf8");
+const resultsUrl = `data:text/javascript;base64,${Buffer.from(compile(resultsSource)).toString("base64")}`;
+const { default: SurrogateResults } = await import(resultsUrl);
 const source = await readFile(new URL("../app/bo-setup.tsx", import.meta.url), "utf8");
-const compiled = ts.transpileModule(source, { compilerOptions: {
-  jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020,
-} }).outputText.replace(/from "(react(?:\/jsx-runtime)?)"/g,
-  (_, name) => `from ${JSON.stringify(pathToFileURL(require.resolve(name)).href)}`);
+const compiled = compile(source).replace('"./surrogate-results"', JSON.stringify(resultsUrl));
 const { default: BOSetup, BOProfileSummary } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`);
+
+test("surrogate selection offers supported candidates and generation action", () => {
+  const html = renderToStaticMarkup(createElement(SurrogateResults, { sessionId: "test" }));
+  assert.match(html, /Gaussian Process, Random Forest, and Extra Trees/);
+  assert.match(html, /Recommend a surrogate/);
+});
 
 const columns = [
   { name: "efficiency", numeric: true, suggested_type: "continuous", bounds: [0.5, 0.8], categories: [0.5, 0.8] },

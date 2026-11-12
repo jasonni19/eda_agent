@@ -8,3 +8,5 @@ dist/
 eda_report.json
 input_data/
 analysis_sessions/
+benchmark_runs/
+*.tsbuildinfo

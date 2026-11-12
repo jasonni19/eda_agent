@@ -1,6 +1,8 @@
 """Session-backed BO artifacts using the existing local file convention."""
 
 import json
+import logging
+import time
 from pathlib import Path
 from threading import RLock
 from uuid import uuid4
@@ -15,12 +17,24 @@ BO_ARTIFACT_LOCK = RLock()
 
 
 def write_artifact(path: Path, content: str) -> None:
+    """Atomically replace artifacts, tolerating short Windows sync/reader locks."""
     temporary = path.with_name(f"{path.stem}.{uuid4().hex}.tmp")
     try:
-        temporary.write_text(content, encoding="utf-8")
-        temporary.replace(path)
+        for attempt in range(6):
+            try:
+                temporary.write_text(content, encoding="utf-8")
+                temporary.replace(path)
+                break
+            except PermissionError:
+                if attempt == 5:
+                    raise
+                time.sleep(0.05 * 2 ** attempt)
     finally:
-        temporary.unlink(missing_ok=True)
+        try:
+            temporary.unlink(missing_ok=True)
+        except PermissionError:
+            # Cleanup must not hide the original failure or invalidate a saved artifact.
+            logging.getLogger(__name__).warning("Temporary artifact cleanup was locked (%s)", temporary.name)
 
 
 def generate_session_profile(directory: Path, config: BOAnalyzerConfig | None = None) -> BOProfile:

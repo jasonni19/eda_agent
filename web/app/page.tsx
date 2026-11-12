@@ -2,6 +2,7 @@
 
 import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import BOSetup, { DatasetColumn } from "./bo-setup";
 
 type ChatMessage = {
@@ -246,14 +247,15 @@ export default function Home() {
   }
 
   return (
-    <main className="app-shell">
+    <main id="eda-home" className="app-shell">
       <header className="topbar">
-        <a className="brand" href="#" aria-label="Object EDA home">
+        <a className="brand" href="#eda-home" aria-label="Object EDA home">
           <span className="logo-frame">
             <Image src="/object-tech-logo.jpg" alt="Object Tech Inc." priority />
           </span>
           <span className="product-name">Object EDA</span>
         </a>
+        <Link href="/benchmark">Optimization Benchmark</Link>
         <div className="system-status"><span className="status-dot" /> SYSTEM ONLINE</div>
       </header>
 
